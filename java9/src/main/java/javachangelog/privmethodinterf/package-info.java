@@ -1,0 +1,1 @@
+package javachangelog.privmethodinterf;
