@@ -18,7 +18,7 @@ public class Application {
 	String hello() {
 		System.out.println("ejecutando search recent");
 		try {
-			P1ratRecent.search();
+			P1ratRecentBook_v2.search();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return "mal";

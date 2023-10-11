@@ -1,9 +1,7 @@
 package rbarec.scr4pp1ng;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -58,6 +56,11 @@ public class P1ratRecent {
 				if (rowElement.getText().contains("Video")) {
 					continue;
 				}
+				
+				if (rowElement.getText().contains("1 2 3 4 5 6")) {
+					continue;
+				}
+				
 				System.out.println(rowElement.getText());
 				List<WebElement> cells = rowElement.findElements(By.tagName("td"));
 
@@ -65,13 +68,16 @@ public class P1ratRecent {
 				int index = 0;
 				for (WebElement cellElement : cells) {
 					String cellData = cellElement.getText();
-					if (!(index == 0 && cellData.contains("book"))) {
+					if (!(index == 0 && (cellData.contains("book") || cellData.contains("Games")) )) {
 						break;
 					}
 					if (index == 1) {
 						System.out.print(cellData + "\t");
-						WebElement wa = cellElement.findElement(By.tagName("a"));
-						System.out.println(wa.getAttribute("href"));
+						List<WebElement> links = cellElement.findElements(By.className("detLink"));
+						if(!links.isEmpty()) {
+							System.out.println("URL="+links.get(0).getAttribute("href"));
+						}
+						
 						index++;
 						continue;
 					}
