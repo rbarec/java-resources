@@ -21,9 +21,9 @@ public class Todo {
 	private List<Person> participants;
 	private Date date;
 	private String notes;
-	private StatusEnum status;
 	private boolean completed;
+	private Topic topic;
 	private Date dateCompleted;
-	private String topic;
 	private Date dateCreated;
+	private StatusEnum status;
 }
