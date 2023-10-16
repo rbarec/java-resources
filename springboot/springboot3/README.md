@@ -3,13 +3,14 @@
 http://localhost:9999/springboot/info
 
 ## Objetivos.
-- Probar el servercontext
+
 
 
 ## CONSIDERACIONES:
 
 
 ## USECASE  servletContext applicaiton Scope
+- Probar el servercontext
 paquete:   package rbarec.springboot3zero.appcontext;
 
 - podemos almacenar objeto en el app scope.
@@ -22,6 +23,7 @@ https://stackoverflow.com/questions/20190070/thread-safety-of-servletcontext-obj
 
 
 ## USECASE  Interface Driven Controllers in
+- RestController con interfaces!
 paquete:   package rbarec.springboot3zero.books;
 
 https://www.baeldung.com/spring-interface-driven-controllers

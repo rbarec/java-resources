@@ -14,7 +14,8 @@ Domain Driven Design appication with CQRS/ES/Clean/Hexagonal architecture
 https://github.com/banq/jivejdon
 PEND
 ver archivo de word.docx  C:\ronnHistoryLog_git\github_java_resources
-
+---- aqui todos los ejemplos:
+https://github.com/topics/ddd-sample?l=java
 
 ## GET YOUR HANDS DIRTY ON CLEAN ARCHITECTURE  - 2019 Packt Publishing
 aplicando 

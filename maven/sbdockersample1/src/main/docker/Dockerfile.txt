@@ -1,0 +1,7 @@
+FROM dockerfile/java:oracle-java8
+
+VOLUME /tmp
+ADD sbdockersample1.jar /opt/sbdockersample1/
+EXPOSE 8080
+WORKDIR /opt/sbdockersample1/
+CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-Xms512m", "-Xmx1g", "-jar", "sbdockersample1.jar"]

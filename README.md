@@ -8,3 +8,11 @@ PENDIENTES
 
 - hacer todas las guias de spring 
 https://spring.io/guides
+
+
+Spring Boot custom starter!
+
+Spring Boot Dependency Management with a Custom Parent
+
+quaarkus
+googlecloud api consume
