@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import rbarec.numberstoletters.TransformarCedulaRuc;
-import rbarec.numberstoletters.TransformarPredio;
-import rbarec.numberstoletters.dto.AnalisisPalabraDTO;
-import rbarec.numberstoletters.dto.AnalisisPalabraDTO.EstrategiaEnum;
-import rbarec.numberstoletters.dto.CharsStatsDTO;
+import rbarec.numberstoletters.domain.CharsStats;
+import rbarec.numberstoletters.domain.EstrategiaEnum;
+import rbarec.numberstoletters.domain.Palabra;
 import rbarec.numberstoletters.dto.TransformaLetraResponse;
-import rbarec.numberstoletters.dto.TransformaOracion;
+import rbarec.numberstoletters.dto.TransformaOracionResponse;
+import rbarec.numberstoletters.transform.TransformarCedulaRuc;
+import rbarec.numberstoletters.transform.TransformarPredio;
 import rbarec.numberstoletters.util.NumberLetter_esUtil;
 import rbarec.numberstoletters.util.NumberLetter_esUtil.TipoEntradaEnum;
 
@@ -20,7 +20,7 @@ public class TransformarTextoSimple {
 
 	public static void main(String[] args) throws Exception {
 		TransformarTextoSimple to = new TransformarTextoSimple();
-		TransformaOracion x = 	to.transformarTextoSimple(1, "siendo $ 567,88"//
+		TransformaOracionResponse x = 	to.transformarTextoSimple(1, "siendo $ 567,88"//
 				+ " la $33.44 1 de 9 de 2023, suma USD $ 199.456,96. Registro de"//
 				+ " $ 171.456,96. una en vir	tud  celular 0960590924", true);
 		System.out.println( x.getTextoResultado() ); 
@@ -30,32 +30,33 @@ public class TransformarTextoSimple {
 	/**
 	 * 
 	 * @param z
-	 * @param text0Run
+	 * @param strTextoSimple
 	 * @param commons
 	 * @return
 	 * @throws Exception
 	 */
-	public TransformaOracion transformarTextoSimple(//
+	public TransformaOracionResponse transformarTextoSimple(//
 			int z, // Para saber si es el primer RUNS
-			String text0Run, //
+			String strTextoSimple, //
 			boolean verboselog) throws Exception {
 
 		this.verboselog = verboselog;
-		TransformaOracion to = new TransformaOracion();
-		to.setArrPalabras(split_cleanBlancosTabsDeTexto(text0Run));
+		TransformaOracionResponse processResponse = new TransformaOracionResponse();
+		//create array, split and clean empties!.
+		processResponse.setArrPalabras(split_cleanBlancosTabsDeTexto(strTextoSimple));
 
 		// Analisis de cada Palabra!
-		procesarAnalisisPorCadaPalabra(to);
+		procesarAnalisisPorCadaPalabra(processResponse);
 
-		for (Map.Entry<Integer, AnalisisPalabraDTO> entry : to.getMapAnalisis().entrySet()) {
-			AnalisisPalabraDTO val = entry.getValue();
+		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
+			Palabra val = entry.getValue();
 			if (val.hasErrors() && WORD_WITH_ERROR_SAME_WORD) {
-				val.fixResultsWithOriginalWord_paraTransformar();
+				val.fixResultsWithOriginalWordForTransform();
 			}
 		}
 
-		for (Map.Entry<Integer, AnalisisPalabraDTO> entry : to.getMapAnalisis().entrySet()) {
-			AnalisisPalabraDTO val = entry.getValue();
+		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
+			Palabra val = entry.getValue();
 			//
 			if (val.isEstrategiaNumericaFlag()) {
 				ejecutarEstrategiaNumeros(val);
@@ -79,9 +80,9 @@ public class TransformarTextoSimple {
 
 		}
 
-		for (Map.Entry<Integer, AnalisisPalabraDTO> entry : to.getMapAnalisis().entrySet()) {
+		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
 			Integer key = entry.getKey();
-			AnalisisPalabraDTO val = entry.getValue();
+			Palabra val = entry.getValue();
 
 			System.out.println("IMP::: " + key + "  " + val.lightLog() + "      ___R//" + val.getPalabraTransformada());
 //			if (!EstrategiaEnum.PALABRA.equals(val.getEstrategia())
@@ -90,7 +91,7 @@ public class TransformarTextoSimple {
 //				System.out.println("IMP::: " + key + "      " + val.lightLog() + "___R//" + val.getPalabraTransformada());
 //			}
 		}
-		return to;
+		return processResponse;
 	}
 
 	/**
@@ -99,7 +100,7 @@ public class TransformarTextoSimple {
 	 * @throws Exception
 	 */
 	private void ejecutarEstrategiaPalabrasSimbolos_noNumeros(//
-			AnalisisPalabraDTO anal //
+			Palabra anal //
 	) throws Exception {
 		if (anal.getEstrategia().equals(EstrategiaEnum.PALABRA) || //
 				anal.getEstrategia().equals(EstrategiaEnum.OTRAS_PALABRAS) || //
@@ -120,7 +121,7 @@ public class TransformarTextoSimple {
 	 * @throws Exception
 	 */
 	private void ejecutarEstrategiaNumeros(//
-			AnalisisPalabraDTO anal //
+			Palabra anal //
 	) throws Exception {
 
 		NumberLetter_esUtil numberLetteresUtil = new NumberLetter_esUtil();
@@ -140,7 +141,7 @@ public class TransformarTextoSimple {
 		if (anal.getEstrategia().equals(EstrategiaEnum.SOLO_NUMERO_CON_DECIMALES)) {
 			// TODO TRUCO PENDIENTE DE AJUSTAR
 			String ajusteTrucoChaoSeparadorDecimal = anal.palabraParaTransformar()
-					.replace(CharsStatsDTO.MILES_SEPARADOR, "");
+					.replace(CharsStats.MILES_SEPARADOR, "");
 			String toLetras = numberLetteresUtil.convertir(//
 					TipoEntradaEnum.numero, //
 					ajusteTrucoChaoSeparadorDecimal, //
@@ -151,7 +152,7 @@ public class TransformarTextoSimple {
 
 		if (anal.getEstrategia().equals(EstrategiaEnum.DINERO)) {
 			String ajusteTrucoChaoSeparadorDecimal = anal.palabraParaTransformar()
-					.replace(CharsStatsDTO.MILES_SEPARADOR, "");
+					.replace(CharsStats.MILES_SEPARADOR, "");
 			boolean separadorComa = true;
 			String toLetras = numberLetteresUtil.convertir(//
 					TipoEntradaEnum.dinero, ajusteTrucoChaoSeparadorDecimal, separadorComa);
@@ -170,9 +171,9 @@ public class TransformarTextoSimple {
 	 * @param commons
 	 */
 	private void procesarAnalisisPorCadaPalabra(//
-			TransformaOracion to) {
+			TransformaOracionResponse to) {
 		for (int indexWord = 0; indexWord < to.size(); indexWord++) {
-			AnalisisPalabraDTO analisis = new AnalisisPalabraDTO(indexWord, to.getArrPalabras().get(indexWord));
+			Palabra analisis = new Palabra(indexWord, to.getArrPalabras().get(indexWord));
 			to.getMapAnalisis().put(indexWord, analisis);
 		}
 	}

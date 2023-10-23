@@ -1,8 +1,8 @@
-package rbarec.numberstoletters;
+package rbarec.numberstoletters.transform;
 
 import lombok.extern.log4j.Log4j2;
-import rbarec.numberstoletters.dto.AcumErrorInLoop;
-import rbarec.numberstoletters.dto.AnalisisPalabraDTO;
+import rbarec.numberstoletters.domain.Palabra;
+import rbarec.numberstoletters.dto.ErrorsInLoopDTO;
 import rbarec.numberstoletters.dto.TransformaLetraResponse;
 import rbarec.numberstoletters.util.NumberLetter_esUtil;
 import rbarec.numberstoletters.util.NumberLetter_esUtil.TipoEntradaEnum;
@@ -13,7 +13,7 @@ public class TransformarPredio implements TransformadorEspecificoPalabra {
 	private final String SEPARADOR_PREDIO = "-";
 
 	public static void main(String[] args) {
-		AnalisisPalabraDTO a = new AnalisisPalabraDTO(1, "10-10-10");
+		Palabra a = new Palabra(1, "10-10-10");
 		TransformarPredio tp = new TransformarPredio();
 		System.out.println(tp.validarNaturaleza(a));
 		if (tp.validarNaturaleza(a)) {
@@ -24,7 +24,7 @@ public class TransformarPredio implements TransformadorEspecificoPalabra {
 	}
 
 	@Override
-	public boolean validarNaturaleza(AnalisisPalabraDTO analisis) {
+	public boolean validarNaturaleza(Palabra analisis) {
 		if (!analisis.palabraParaTransformar().contains(SEPARADOR_PREDIO))
 			return false;
 		String[] arr = analisis.palabraParaTransformar().split(SEPARADOR_PREDIO);
@@ -39,14 +39,14 @@ public class TransformarPredio implements TransformadorEspecificoPalabra {
 	public TransformaLetraResponse transformar(String strPalabra) {
 		TransformaLetraResponse response = TransformaLetraResponse.builder().entrada(strPalabra).build();
 		NumberLetter_esUtil numberLetteresUtil = new NumberLetter_esUtil();
-		AcumErrorInLoop errors = AcumErrorInLoop.getInstance();
+		ErrorsInLoopDTO errors = ErrorsInLoopDTO.getInstance();
 
 		StringBuilder res = new StringBuilder("");
 		String[] arr = strPalabra.split(SEPARADOR_PREDIO);
 		for (int j = 0; j < arr.length; j++) {
 			boolean isLastItem = j == arr.length - 1;
 			String palabra = "" + arr[j];
-			AnalisisPalabraDTO dto = new AnalisisPalabraDTO(j, palabra);
+			Palabra dto = new Palabra(j, palabra);
 			String toLetras = palabra;
 			try {
 				if (dto.isEstrategiaNumericaFlag()) {

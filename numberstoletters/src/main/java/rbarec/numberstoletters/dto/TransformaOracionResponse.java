@@ -9,6 +9,7 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import rbarec.numberstoletters.domain.Palabra;
 
 /**
  * Texto Entrada Texto Salida y Conteo Errores.
@@ -19,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TransformaOracion implements Serializable {
+public class TransformaOracionResponse implements Serializable {
 	private static final long serialVersionUID = 17223222180L;
 
 	private final boolean EXPORT_ESTRATEGIA=false;
@@ -29,7 +30,7 @@ public class TransformaOracion implements Serializable {
 	private List<String> arrPalabras;
 	private Integer conteoErrores = 0;
 	List<String> arrResultadoTrans = new ArrayList<>();
-	Map<Integer, AnalisisPalabraDTO> mapAnalisis = new HashMap<>();
+	Map<Integer, Palabra> mapAnalisis = new HashMap<>();
 
 	Map<String, String> maplogWords = new HashMap<>();
 
@@ -46,8 +47,8 @@ public class TransformaOracion implements Serializable {
 	public String getTextoResultado() {
 		String aaa = "";
 		String bbb = "";
-		for (Map.Entry<Integer, AnalisisPalabraDTO> entry : getMapAnalisis().entrySet()) {
-			AnalisisPalabraDTO val = entry.getValue();
+		for (Map.Entry<Integer, Palabra> entry : getMapAnalisis().entrySet()) {
+			Palabra val = entry.getValue();
 			if(EXPORT_ESTRATEGIA) {
 				aaa += val.getPalabraTransformada() + " -"+val.getEstrategia()+"-";
 			}else {

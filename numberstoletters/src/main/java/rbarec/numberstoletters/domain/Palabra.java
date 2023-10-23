@@ -1,4 +1,4 @@
-package rbarec.numberstoletters.dto;
+package rbarec.numberstoletters.domain;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -8,46 +8,15 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Getter
 @Setter
-public class AnalisisPalabraDTO {
-
-	private boolean DEBEN_SIGNOS_PUNTUACION_RETIRADOS = true;
-
-	/**
-	 * Signos de Puntuacion gramaticas pegada al final de una palabra!
-	 */
-	private static String puntuacionGramaticalChars = "?,.:;";
-	private static String SimbolosPuntuacionIniciales = "?,.-";
-	private static final String LetrasAZazPattern = ".*[a-zA-Z].*";
-
-	public static enum EstrategiaEnum {
-		SIN_ESTRATEGIA, // no identifique que hacer!
-		PALABRA, //
-		OTRAS_PALABRAS, //
-		SIMBOLOS_NO_DINERO, //
-		ERROR_FIX_SAME_WORD, //
-		SOLO_NUMEROS_CEDULA10, //
-		SOLO_NUMEROS_RUC_13, //
-		SOLO_NUMERO_ENTERO, //
-		SOLO_NUMERO_CON_DECIMALES, //
-		DINERO //
-
-	}
-
-	public static enum EstadoEnum {
-		CREADO, //
-		ESTRATEGIA_FIN, //
-		TRANSFORMACION_FIN, //
-		ERROR//
-	}
-
+public class Palabra {
+	
 	@Setter(AccessLevel.NONE)
-	private EstrategiaEnum estrategia;
-	private String estrategiaLog;
-	private boolean estrategiaNumericaFlag;
-
-	private EstadoEnum estado;
+	private Estrategia estrategia;
+	
+	private EstadoPalabraEnum estado;
+	private String estadoLog;
 	private String estadoMsj;
-	private EstadoEnum estadoTransformacion;
+	private EstadoPalabraEnum estadoTransformacion;
 	private String estadoTransformacionMsj;
 
 	@Setter(AccessLevel.NONE)
@@ -72,7 +41,7 @@ public class AnalisisPalabraDTO {
 	/**
 	 * Palabra con la que se trabaja todo constructor .
 	 */
-	@Getter(AccessLevel.NONE)
+	//@Getter(AccessLevel.NONE)
 	private String palabra;
 
 	/**
@@ -92,17 +61,16 @@ public class AnalisisPalabraDTO {
 	private Boolean mustAddLastSignal = false;
 	private char primerSimbolo;
 	private char ultimoSimbolo;
-	private Boolean empiezaSimbolo = false;
 	private Boolean terminaSimbolo = false;
 	private Boolean terminaSimboloPuntuacionGramatical = false;
 
-	private CharsStatsDTO charStat;
+	private CharsStats charStat;
 
-	public AnalisisPalabraDTO(int ordenIndex, String strPalabra) {
+	public Palabra(int ordenIndex, String strPalabra) {
 		super();
 		this.orden = ordenIndex;
 		this.palabraInput = strPalabra;
-		changeEstrategia(EstrategiaEnum.SIN_ESTRATEGIA); // xdefecto
+		estrategia = new Estrategia();
 		// valor x defecto
 		palabraParaTransformar = this.palabraInput; // xdefecto
 		palabraClean = limpiarEspaciosyTabs(strPalabra);
@@ -114,10 +82,10 @@ public class AnalisisPalabraDTO {
 			primerSimbolo = palabraClean.charAt(0);
 			ultimoSimbolo = palabraClean.charAt(palabraClean.length() - 1);
 			log.debug("NOTA: Para analizar palabras debemos retirar los carcteres de ortografia como:"
-					+ puntuacionGramaticalChars);
+					+ Constantes.GRAMATICAL_SIGN);
 			// mayor_a_1 porque si viene coma sola se cae! y duplica!
-			if (DEBEN_SIGNOS_PUNTUACION_RETIRADOS && palabra.length() >= 2) {
-				if (puntuacionGramaticalChars.contains("" + ultimoSimbolo)) {
+			if (Constantes.RETIRAR_SIGNOS_PUNTUACION && palabra.length() >= 2) {
+				if (Constantes.GRAMATICAL_SIGN.contains("" + ultimoSimbolo)) {
 					palabraSinPuntuacionGramatical = palabraClean.substring(0, palabraClean.length() - 1);
 					palabra = palabraSinPuntuacionGramatical;
 					mustAddLastSignal = true;
@@ -125,50 +93,17 @@ public class AnalisisPalabraDTO {
 					tieneSimbolosPuntuacion = true;
 				}
 			}
-			charStat = new CharsStatsDTO(palabra);
+			charStat = new CharsStats(palabra);
 			palabraParaTransformar = palabra;
 			
-			// DESDE AQUYI estrategia
-			// ----------------
-			// QUICKLY
-			if (charStat.tieneLetrasAZaz()) {
-				changeEstrategia(EstrategiaEnum.PALABRA);
-				estado = EstadoEnum.ESTRATEGIA_FIN;
-				return;
-			}
-
-			if (charStat.tieneSimbolosNoDinero()) {
-				changeEstrategia(EstrategiaEnum.SIMBOLOS_NO_DINERO);
-				estado = EstadoEnum.ESTRATEGIA_FIN;
-				return;
-			}
-
-			if (charStat.tieneNumeros() && charStat.solamenteNumeros()) {
-				if (palabra.length() == 10) {
-					changeEstrategia(EstrategiaEnum.SOLO_NUMEROS_CEDULA10);
-				} else if (palabra.length() == 13) {
-					changeEstrategia(EstrategiaEnum.SOLO_NUMEROS_RUC_13);
-				} else {
-					changeEstrategia(EstrategiaEnum.SOLO_NUMERO_ENTERO);
-				}
-				estado = EstadoEnum.ESTRATEGIA_FIN;
-				return;
-			}
-
-			if (charStat.tieneNumeros() && //
-					!charStat.tieneLetrasAZaz() && //
-					!charStat.tieneSimbolosNoDinero() && charStat.tieneSimboloSeparadorDecimal()) {
-				changeEstrategia(EstrategiaEnum.SOLO_NUMERO_CON_DECIMALES);
-				estado = EstadoEnum.ESTRATEGIA_FIN;
-				return;
-			}
+		
 
 			//
 		} catch (Exception e) {
 			final String err = "ERROR Palabra (" + strPalabra + ") " + e.getMessage();
 			log.error(err, e);
 			e.printStackTrace();
-			this.estado = EstadoEnum.ERROR;
+			this.estado = EstadoPalabraEnum.ERROR;
 			this.estadoMsj = err;
 			this.porErrorSetPalabraFinalConDefault();
 		}
@@ -184,7 +119,7 @@ public class AnalisisPalabraDTO {
 	 * @return
 	 */
 	private String limpiarEspaciosyTabs(String p) {
-		changeEstrategia(EstrategiaEnum.SIN_ESTRATEGIA); // xdefecto
+		estrategia.changeEstrategia(EstrategiaEnum.NO_ESTRATEGY); // xdefecto
 		if (p.contains("\t")) {
 			p = p.replace("\t", "");
 		}
@@ -196,59 +131,36 @@ public class AnalisisPalabraDTO {
 	private String palabraAnteriorSugiereEstrategia;
 	private String yoSugieroEstrategia;
 
-	/**
-	 * Unico Metodo de ajuste de estrategia
-	 * 
-	 * @param newEstrat
-	 * @return
-	 */
-	private String changeEstrategia(EstrategiaEnum newEstrat) {
-		this.estrategiaNumericaFlag = esEstrategiaNumerica(newEstrat);
-		if (this.estrategia == null) {
-			this.estrategiaLog = newEstrat.name();
-			this.estrategia = newEstrat;
-			return estrategiaLog;
-		}
-		this.estrategiaLog = this.estrategiaLog + " - " + newEstrat.name();
-		this.estrategia = newEstrat;
-		return this.estrategiaLog;
+	public void changeEstrategia(EstrategiaEnum newEstrat) {
+		estrategia.changeEstrategia(newEstrat);
 	}
-
-	/**
-	 * Unico Metodo de ajuste de estrategia EXTERNA
-	 * 
-	 * @param newEstrat
-	 * @return
-	 */
-	public String changeEstrategiaExternal(EstrategiaEnum newEstrat) {
-		this.estrategiaNumericaFlag = esEstrategiaNumerica(newEstrat);
-		if (this.estrategia == null) {
-			this.estrategiaLog = newEstrat.name();
-			this.estrategia = newEstrat;
-			return estrategiaLog;
+	
+	public void changeEstado(EstadoPalabraEnum newEstadoEnum) {
+		if (this.estado == null) {
+			this.estadoLog = newEstadoEnum.name();
+			this.estado = newEstadoEnum;
+			return ;
 		}
-		this.estrategiaLog = this.estrategiaLog + " - (ex)" + newEstrat.name();
-		this.estrategia = newEstrat;
-		return this.estrategiaLog;
+		this.estadoLog = this.estadoLog + " - " + newEstadoEnum.name();
+		this.estado = newEstadoEnum;
+		return;
 	}
 
 	/**
 	 * Quiero saber si la estrategia es numerica o no!<br>
 	 * Hay una FLAG que almacena este valor!
 	 * 
-	 * @param n
+	 * @param estrategiaEnum
 	 * @return
 	 */
-	private boolean esEstrategiaNumerica(EstrategiaEnum n) {
-		if (n.equals(EstrategiaEnum.DINERO) || //
-				n.equals(EstrategiaEnum.SOLO_NUMERO_ENTERO) || //
-				n.equals(EstrategiaEnum.SOLO_NUMERO_CON_DECIMALES) || //
-				n.equals(EstrategiaEnum.SOLO_NUMEROS_RUC_13) || //
-				n.equals(EstrategiaEnum.SOLO_NUMEROS_CEDULA10))
-			return true;
-		return false;
+	public boolean esEstrategiaNumerica(EstrategiaEnum estrategiaEnum) {
+		return estrategia.getEstrategia().isNumeric();
 	}
 
+	/**
+	 * log simple de una linea  palabra y estrategia
+	 * @return
+	 */
 	public String lightLog() {
 		return " " + palabraInput + " [" + palabra + "] \t >" + estrategia + "<";
 	}
@@ -259,7 +171,7 @@ public class AnalisisPalabraDTO {
 	 * @return
 	 */
 	public boolean hasErrors() {
-		return EstadoEnum.ERROR.equals(this.estado);
+		return EstadoPalabraEnum.ERROR.equals(this.estado);
 	}
 
 	/**
@@ -267,21 +179,25 @@ public class AnalisisPalabraDTO {
 	 * EstrategiaEnum.ERROR_FIX_SAME_WORD<br>
 	 * EstadoEnum.TRANSFORMACION_FIN;<br>
 	 */
-	public void fixResultsWithOriginalWord_paraTransformar() {
+	public void fixResultsWithOriginalWordForTransform() {
 		this.porErrorSetPalabraFinalConDefault();
-		this.changeEstrategia(EstrategiaEnum.ERROR_FIX_SAME_WORD);
-		this.estado = EstadoEnum.TRANSFORMACION_FIN;
+		estrategia.changeEstrategia(EstrategiaEnum.ERROR_FIX_SAME_WORD);
+		this.estado = EstadoPalabraEnum.TRANSFORMACION_FIN;
 		this.estadoTransformacionMsj = "Error Estrategia and fixWithOriginalWord";
 
 	}
 
 	/**
-	 * Valida que tenga SIN-ESTRATEGIA despues de analisis.
+	 * Valida que tenga NO_ESTRATEGYdespues de analisis.
 	 * 
 	 * @return
 	 */
 	public boolean sinEstrategia() {
-		return EstrategiaEnum.SIN_ESTRATEGIA.equals(this.estrategia);
+		return EstrategiaEnum.NO_ESTRATEGY.equals(this.estrategia.getEstrategia());
+	}
+	
+	public boolean isEstrategiaNumericaFlag() {
+		return estrategia.getEstrategia().isNumeric();
 	}
 
 	/**
@@ -320,7 +236,7 @@ public class AnalisisPalabraDTO {
 		this.palabraTransformada = wordTransformToNumber;
 		// ADD ERROR DE TRANSFORMACION.
 		if (msjErrors != null) {
-			estadoTransformacion = EstadoEnum.ERROR;
+			estadoTransformacion = EstadoPalabraEnum.ERROR;
 			estadoTransformacionMsj = msjErrors;
 
 		}
@@ -337,7 +253,7 @@ public class AnalisisPalabraDTO {
 		wordTransformToNumber = wordTransformToNumber.trim();
 		this.palabraTransformada = mustAddLastSignal ? wordTransformToNumber + ultimoSimbolo : wordTransformToNumber;
 		if (msjErrors != null) {
-			estadoTransformacion = EstadoEnum.ERROR;
+			estadoTransformacion = EstadoPalabraEnum.ERROR;
 			estadoTransformacionMsj = msjErrors;
 
 		}

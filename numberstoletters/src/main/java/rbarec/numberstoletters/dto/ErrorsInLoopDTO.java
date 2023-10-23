@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Acumulador de errores en loop for
+ * Acumula y cuenta los errores en loop for
  * 
  * @author Ronald
  *
@@ -15,18 +15,18 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AcumErrorInLoop {
+public class ErrorsInLoopDTO {
 
 	private StringBuilder errors;
 	private int countErrors;
 
-	public static AcumErrorInLoop getInstance(){
-		AcumErrorInLoop a = new AcumErrorInLoop();
+	public static ErrorsInLoopDTO getInstance(){
+		ErrorsInLoopDTO a = new ErrorsInLoopDTO();
 		a.errors= new StringBuilder("");
 		a.countErrors=0;
 		return a;
 	}
-	public AcumErrorInLoop addErrors(String err){
+	public ErrorsInLoopDTO addErrors(String err){
 		errors.append(err).append(" ");
 		countErrors++;
 		return this;

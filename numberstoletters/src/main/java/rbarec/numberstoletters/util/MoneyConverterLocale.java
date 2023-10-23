@@ -1,4 +1,4 @@
-package rbarec.numberstoletters;
+package rbarec.numberstoletters.util;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
