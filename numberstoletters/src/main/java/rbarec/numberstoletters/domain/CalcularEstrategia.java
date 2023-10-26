@@ -1,42 +1,52 @@
 package rbarec.numberstoletters.domain;
 
-      
-public class CalcularEstrategia { // NO_UCD (unused code)
+/**
+ * Calcular Estrategia de una palabra
+ * 
+ * @author Ronald
+ *
+ */
+public class CalcularEstrategia {
+	/**
+	 * Calcular estrategia basado en la estadistica de la palabra.
+	 * 
+	 * @param p
+	 */
+	public static void calcular(Palabra p) {
+		PalabraStats stats = p.getStats();
 
-	public void calcular(Palabra p) {
-		CharsStats charStat = p.getCharStat();
-
-		// DESDE AQUYI estrategia
-		// ----------------
-		// QUICKLY
-		if (charStat.tieneLetrasAZaz()) {
-			p.changeEstrategia(EstrategiaEnum.PALABRA);
+		// Si la palabra contiene letras
+		if (stats.tieneLetrasAZaz()) {
+			p.changeEstrategia(TipoEstrategiaEnum.PALABRA);
 			p.changeEstado(EstadoPalabraEnum.ESTRATEGIA_FIN);
 			return;
 		}
 
-		if (charStat.tieneSimbolosNoDinero()) {
-			p.changeEstrategia(EstrategiaEnum.SIMBOLOS_NO_DINERO);
+		// Si la palabra contiene simbolos de no dinero
+		if (stats.tieneSimbolosNoDinero()) {
+			p.changeEstrategia(TipoEstrategiaEnum.SIMBOLOS_NO_DINERO);
 			p.changeEstado(EstadoPalabraEnum.ESTRATEGIA_FIN);
 			return;
 		}
 
-		if (charStat.tieneNumeros() && charStat.solamenteNumeros()) {
+		// Si la palabra contiene solo numeros.
+		if (stats.tieneNumeros() && stats.solamenteNumeros()) {
 			if (p.getPalabra().length() == 10) {
-				p.changeEstrategia(EstrategiaEnum.SOLO_NUMEROS_CEDULA10);
+				p.changeEstrategia(TipoEstrategiaEnum.SOLO_NUMEROS_CEDULA10);
 			} else if (p.getPalabra().length() == 13) {
-				p.changeEstrategia(EstrategiaEnum.SOLO_NUMEROS_RUC_13);
+				p.changeEstrategia(TipoEstrategiaEnum.SOLO_NUMEROS_RUC_13);
 			} else {
-				p.changeEstrategia(EstrategiaEnum.SOLO_NUMERO_ENTERO);
+				p.changeEstrategia(TipoEstrategiaEnum.SOLO_NUMERO_ENTERO);
 			}
 			p.changeEstado(EstadoPalabraEnum.ESTRATEGIA_FIN);
 			return;
 		}
 
-		if (charStat.tieneNumeros() && //
-				!charStat.tieneLetrasAZaz() && //
-				!charStat.tieneSimbolosNoDinero() && charStat.tieneSimboloSeparadorDecimal()) {
-			p.changeEstrategia(EstrategiaEnum.SOLO_NUMERO_CON_DECIMALES);
+		// Por ultimo! quedan los numeros decimales que pueden ser dinero.
+		if (stats.tieneNumeros() && //
+				!stats.tieneLetrasAZaz() && //
+				!stats.tieneSimbolosNoDinero() && stats.tieneSimboloSeparadorDecimal()) {
+			p.changeEstrategia(TipoEstrategiaEnum.SOLO_NUMERO_CON_DECIMALES);
 			p.changeEstado(EstadoPalabraEnum.ESTRATEGIA_FIN);
 			return;
 		}

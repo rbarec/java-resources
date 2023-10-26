@@ -12,12 +12,14 @@ public class TransformarPredio implements TransformadorEspecificoPalabra {
 
 	private final String SEPARADOR_PREDIO = "-";
 
+	// TEST
+	// TEST
 	public static void main(String[] args) {
 		Palabra a = new Palabra(1, "10-10-10");
 		TransformarPredio tp = new TransformarPredio();
 		System.out.println(tp.validarNaturaleza(a));
 		if (tp.validarNaturaleza(a)) {
-			TransformaLetraResponse re = tp.transformar(a.palabraParaTransformar());
+			TransformaLetraResponse re = tp.transformar(a);
 			System.out.println(re);
 		}
 
@@ -36,7 +38,8 @@ public class TransformarPredio implements TransformadorEspecificoPalabra {
 	}
 
 	@Override
-	public TransformaLetraResponse transformar(String strPalabra) {
+	public TransformaLetraResponse transformar(Palabra palabraObj) {
+		String strPalabra = palabraObj.palabraParaTransformar();
 		TransformaLetraResponse response = TransformaLetraResponse.builder().entrada(strPalabra).build();
 		NumberLetter_esUtil numberLetteresUtil = new NumberLetter_esUtil();
 		ErrorsInLoopDTO errors = ErrorsInLoopDTO.getInstance();

@@ -5,7 +5,11 @@ Paquete que convierte un numero en Letras, tiene metodos que aceptan String Inte
 1.- NumberLetterUtil es_ES
 2.- DetectorNumeroEnTextos
 
-## Caracteristicas NumberLetterUtil
+## Domain NumberLetterUtil
+
+1. Transformar Oraciones. //con Servicio transformarTextoSimple
+
+
 - Los textos estan en Lenguaje Español y no recibe parametros para cambiar de lenguaje.
 - se probo  desde 0 a cifras de 921777000.50
 - el separador de decimales puede venir con punto (.) o con coma (,) el sistema lo normaliza al punto y lo transforma.

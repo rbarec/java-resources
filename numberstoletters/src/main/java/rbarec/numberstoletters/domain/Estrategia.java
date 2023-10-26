@@ -16,13 +16,16 @@ import lombok.extern.log4j.Log4j2;
 @Setter
 public class Estrategia {
 
-	private static final EstrategiaEnum ESTRATEGIA_DEFAULT = EstrategiaEnum.NO_ESTRATEGY;
+	/**
+	 * En caso de error o ambiguedad aplicar la estrategia DEFAULT.
+	 */
+	private static final TipoEstrategiaEnum ESTRATEGIA_DEFAULT = TipoEstrategiaEnum.NO_ESTRATEGY;
 
 	/**
 	 * Estrategia para una palabra
 	 */
 	@Setter(AccessLevel.NONE)
-	private EstrategiaEnum estrategia;
+	private TipoEstrategiaEnum tipoEnum;
 	/**
 	 * Historico acumulado de estrategia de una palabra
 	 */
@@ -45,17 +48,24 @@ public class Estrategia {
 	 * @param newEstrat
 	 * @return
 	 */
-	public void changeEstrategia(final EstrategiaEnum newEstrat) {
-
-		this.estrategiaLog = this.estrategia == null ? newEstrat.name() : this.estrategiaLog + " - " + newEstrat.name();
+	public void changeEstrategia(final TipoEstrategiaEnum newEstrat) {
+		this.estrategiaLog = this.tipoEnum == null ? newEstrat.name() : this.estrategiaLog + " - " + newEstrat.name();
 		log.debug("changeEstrategia " + this.estrategiaLog);
-		this.estrategia = newEstrat;
+		this.tipoEnum = newEstrat;
 		return;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isNoStrategy() {
+		return this.getTipoEnum() == TipoEstrategiaEnum.NO_ESTRATEGY;
 	}
 
 	@Override
 	public String toString() {
-		return estrategia.name();
+		return tipoEnum.name();
 	}
 
 }

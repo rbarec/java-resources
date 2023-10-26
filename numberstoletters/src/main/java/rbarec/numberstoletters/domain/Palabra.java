@@ -9,16 +9,21 @@ import lombok.extern.log4j.Log4j2;
 @Getter
 @Setter
 public class Palabra {
-	
+	/**
+	 * Objeto Estrategia
+	 */
 	@Setter(AccessLevel.NONE)
 	private Estrategia estrategia;
-	
+
 	private EstadoPalabraEnum estado;
 	private String estadoLog;
 	private String estadoMsj;
 	private EstadoPalabraEnum estadoTransformacion;
 	private String estadoTransformacionMsj;
 
+	/**
+	 * Orden de aparicion de palabra
+	 */
 	@Setter(AccessLevel.NONE)
 	private final int orden;
 
@@ -41,7 +46,7 @@ public class Palabra {
 	/**
 	 * Palabra con la que se trabaja todo constructor .
 	 */
-	//@Getter(AccessLevel.NONE)
+	// @Getter(AccessLevel.NONE)
 	private String palabra;
 
 	/**
@@ -54,18 +59,34 @@ public class Palabra {
 	 * Resultado Final
 	 */
 	@Setter(AccessLevel.NONE)
-
 	private String palabraTransformada;
 
 	private Boolean tieneSimbolosPuntuacion;
 	private Boolean mustAddLastSignal = false;
-	private char primerSimbolo;
-	private char ultimoSimbolo;
+	private String primerCaracter;
+	private String ultimoCaracter;
 	private Boolean terminaSimbolo = false;
 	private Boolean terminaSimboloPuntuacionGramatical = false;
 
-	private CharsStats charStat;
+	/**
+	 * Estadistiscas de cada caracter de palabras
+	 */
+	private PalabraStats stats;
 
+	/**
+	 * Palabra anterior a la palabra actual
+	 */
+	private String txtPreviousWord;
+	/**
+	 * Palabra posterior a la palabra actual
+	 */
+	private String txtNextWord;
+
+	/**
+	 * 
+	 * @param ordenIndex
+	 * @param strPalabra
+	 */
 	public Palabra(int ordenIndex, String strPalabra) {
 		super();
 		this.orden = ordenIndex;
@@ -79,13 +100,13 @@ public class Palabra {
 			// ----------------
 			// SIMBOLOS GRAMATICALES
 			// char[] ch = new char[palabraClean.length()];
-			primerSimbolo = palabraClean.charAt(0);
-			ultimoSimbolo = palabraClean.charAt(palabraClean.length() - 1);
+			primerCaracter = "" + palabraClean.charAt(0);
+			ultimoCaracter = "" + palabraClean.charAt(palabraClean.length() - 1);
 			log.debug("NOTA: Para analizar palabras debemos retirar los carcteres de ortografia como:"
 					+ Constantes.GRAMATICAL_SIGN);
 			// mayor_a_1 porque si viene coma sola se cae! y duplica!
 			if (Constantes.RETIRAR_SIGNOS_PUNTUACION && palabra.length() >= 2) {
-				if (Constantes.GRAMATICAL_SIGN.contains("" + ultimoSimbolo)) {
+				if (Constantes.GRAMATICAL_SIGN.contains("" + ultimoCaracter)) {
 					palabraSinPuntuacionGramatical = palabraClean.substring(0, palabraClean.length() - 1);
 					palabra = palabraSinPuntuacionGramatical;
 					mustAddLastSignal = true;
@@ -93,11 +114,9 @@ public class Palabra {
 					tieneSimbolosPuntuacion = true;
 				}
 			}
-			charStat = new CharsStats(palabra);
+			stats = new PalabraStats(palabra);
 			palabraParaTransformar = palabra;
-			
-		
-
+			CalcularEstrategia.calcular(this);
 			//
 		} catch (Exception e) {
 			final String err = "ERROR Palabra (" + strPalabra + ") " + e.getMessage();
@@ -113,13 +132,23 @@ public class Palabra {
 	}
 
 	/**
+	 * obtener Palabra de trabajo Sin Primer Caracter<br>
+	 * this.palabraParaTransformar
+	 * 
+	 * @return
+	 */
+	public String getPalabraSinPrimerCaracter() {
+		return this.palabraParaTransformar.substring(1);
+	}
+
+	/**
 	 * La palabra inicial se elimina TABS y espacios.
 	 * 
 	 * @param p
 	 * @return
 	 */
 	private String limpiarEspaciosyTabs(String p) {
-		estrategia.changeEstrategia(EstrategiaEnum.NO_ESTRATEGY); // xdefecto
+		estrategia.changeEstrategia(TipoEstrategiaEnum.NO_ESTRATEGY); // xdefecto
 		if (p.contains("\t")) {
 			p = p.replace("\t", "");
 		}
@@ -131,15 +160,15 @@ public class Palabra {
 	private String palabraAnteriorSugiereEstrategia;
 	private String yoSugieroEstrategia;
 
-	public void changeEstrategia(EstrategiaEnum newEstrat) {
+	public void changeEstrategia(TipoEstrategiaEnum newEstrat) {
 		estrategia.changeEstrategia(newEstrat);
 	}
-	
+
 	public void changeEstado(EstadoPalabraEnum newEstadoEnum) {
 		if (this.estado == null) {
 			this.estadoLog = newEstadoEnum.name();
 			this.estado = newEstadoEnum;
-			return ;
+			return;
 		}
 		this.estadoLog = this.estadoLog + " - " + newEstadoEnum.name();
 		this.estado = newEstadoEnum;
@@ -153,12 +182,13 @@ public class Palabra {
 	 * @param estrategiaEnum
 	 * @return
 	 */
-	public boolean esEstrategiaNumerica(EstrategiaEnum estrategiaEnum) {
-		return estrategia.getEstrategia().isNumeric();
+	public boolean esEstrategiaNumerica(TipoEstrategiaEnum estrategiaEnum) {
+		return estrategia.getTipoEnum().isNumeric();
 	}
 
 	/**
-	 * log simple de una linea  palabra y estrategia
+	 * log simple de una linea palabra y estrategia
+	 * 
 	 * @return
 	 */
 	public String lightLog() {
@@ -181,25 +211,39 @@ public class Palabra {
 	 */
 	public void fixResultsWithOriginalWordForTransform() {
 		this.porErrorSetPalabraFinalConDefault();
-		estrategia.changeEstrategia(EstrategiaEnum.ERROR_FIX_SAME_WORD);
+		estrategia.changeEstrategia(TipoEstrategiaEnum.ERROR_FIX_SAME_WORD);
 		this.estado = EstadoPalabraEnum.TRANSFORMACION_FIN;
 		this.estadoTransformacionMsj = "Error Estrategia and fixWithOriginalWord";
 
 	}
 
 	/**
+	 * Tiene TIPO> NO-ESTRATEGY seleccionado.<br>
 	 * Valida que tenga NO_ESTRATEGYdespues de analisis.
 	 * 
 	 * @return
 	 */
-	public boolean sinEstrategia() {
-		return EstrategiaEnum.NO_ESTRATEGY.equals(this.estrategia.getEstrategia());
-	}
-	
-	public boolean isEstrategiaNumericaFlag() {
-		return estrategia.getEstrategia().isNumeric();
+	public boolean hasNoEstrategySelected() {
+		return TipoEstrategiaEnum.NO_ESTRATEGY.equals(this.estrategia.getTipoEnum());
 	}
 
+	/**
+	 * Bandera: es la estrategia definida en analisis Numerica
+	 * 
+	 * @return
+	 */
+	public boolean isEstrategiaNumericaFlag() {
+		return estrategia.getTipoEnum().isNumeric();
+	}
+
+	/**
+	 * Esta palabra tiene estrategia default NO-ESTRATEGY
+	 * @return
+	 */
+	public boolean isNoStrategy() {
+		return estrategia.isNoStrategy();
+	}
+	
 	/**
 	 * Palabra para ejecutar transformador numeroLetras<br>
 	 * La unica forma de obtenerla<br>
@@ -249,9 +293,9 @@ public class Palabra {
 	 * @param wordTransformToNumber
 	 * @param msjErrors
 	 */
-	public void guardarResultadoTransformacion(String wordTransformToNumber, String msjErrors) {
-		wordTransformToNumber = wordTransformToNumber.trim();
-		this.palabraTransformada = mustAddLastSignal ? wordTransformToNumber + ultimoSimbolo : wordTransformToNumber;
+	public void guardarResultadoTransformacion(String wordTransformTo, String msjErrors) {
+		wordTransformTo = wordTransformTo.trim();
+		this.palabraTransformada = mustAddLastSignal ? wordTransformTo + ultimoCaracter : wordTransformTo;
 		if (msjErrors != null) {
 			estadoTransformacion = EstadoPalabraEnum.ERROR;
 			estadoTransformacionMsj = msjErrors;

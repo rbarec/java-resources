@@ -1,7 +1,7 @@
 package rbarec.numberstoletters.transform;
 
 import rbarec.numberstoletters.dto.ErrorsInLoopDTO;
-import rbarec.numberstoletters.domain.EstrategiaEnum;
+import rbarec.numberstoletters.domain.TipoEstrategiaEnum;
 import rbarec.numberstoletters.domain.Palabra;
 import rbarec.numberstoletters.dto.TransformaLetraResponse;
 import rbarec.numberstoletters.util.NumberLetter_esUtil;
@@ -20,21 +20,22 @@ public class TransformarCedulaRuc implements TransformadorEspecificoPalabra {
 	 */
 	@Override
 	public boolean validarNaturaleza(Palabra analisis) {
-		return analisis.getEstrategia().equals(EstrategiaEnum.SOLO_NUMEROS_CEDULA10) || //
-				analisis.getEstrategia().equals(EstrategiaEnum.SOLO_NUMEROS_RUC_13);
+		return analisis.getEstrategia().equals(TipoEstrategiaEnum.SOLO_NUMEROS_CEDULA10) || //
+				analisis.getEstrategia().equals(TipoEstrategiaEnum.SOLO_NUMEROS_RUC_13);
 	}
 
 	/**
 	 * transformar cedula o ruc
 	 */
-	public TransformaLetraResponse transformar(String strCedula) {
+	public TransformaLetraResponse transformar(Palabra palabraObj) {
+		String strPalabra = palabraObj.palabraParaTransformar();
 		NumberLetter_esUtil numberLetteresUtil = new NumberLetter_esUtil();
 		ErrorsInLoopDTO errors = ErrorsInLoopDTO.getInstance();
 
 		StringBuilder res = new StringBuilder("");
-		for (int j = 0; j < strCedula.length(); j++) {
+		for (int j = 0; j < strPalabra.length(); j++) {
 			try {
-				String n = "" + strCedula.charAt(j);
+				String n = "" + strPalabra.charAt(j);
 				// String toLetras = Transform_NumeroLetras.convertNumber(n);
 				String toLetras = numberLetteresUtil.convertir(//
 						TipoEntradaEnum.numero, n, true);
@@ -45,8 +46,8 @@ public class TransformarCedulaRuc implements TransformadorEspecificoPalabra {
 				errors.addErrors("return same word.");
 			}
 		}
-		TransformaLetraResponse response = TransformaLetraResponse.builder().entrada(strCedula)//
-				.salida(errors.hasErrors() ? strCedula : res.toString())//
+		TransformaLetraResponse response = TransformaLetraResponse.builder().entrada(strPalabra)//
+				.salida(errors.hasErrors() ? strPalabra : res.toString())//
 				.errors(errors.hasErrors()).msjErrors(errors.getErrors().toString())//
 				.build();
 

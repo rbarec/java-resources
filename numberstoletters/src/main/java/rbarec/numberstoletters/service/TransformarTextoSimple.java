@@ -3,78 +3,120 @@ package rbarec.numberstoletters.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
-import rbarec.numberstoletters.domain.CharsStats;
-import rbarec.numberstoletters.domain.EstrategiaEnum;
+import rbarec.numberstoletters.domain.EstadoPalabraEnum;
 import rbarec.numberstoletters.domain.Palabra;
+import rbarec.numberstoletters.domain.PalabraStats;
+import rbarec.numberstoletters.domain.PropertiesEnum;
+import rbarec.numberstoletters.domain.TipoEstrategiaEnum;
 import rbarec.numberstoletters.dto.TransformaLetraResponse;
 import rbarec.numberstoletters.dto.TransformaOracionResponse;
+import rbarec.numberstoletters.exceptions.PropertiesException;
 import rbarec.numberstoletters.transform.TransformarCedulaRuc;
 import rbarec.numberstoletters.transform.TransformarPredio;
+import rbarec.numberstoletters.transform.TransformarSimboloNumeroUnidos;
 import rbarec.numberstoletters.util.NumberLetter_esUtil;
 import rbarec.numberstoletters.util.NumberLetter_esUtil.TipoEntradaEnum;
+import rbarec.numberstoletters.util.PropsUtil;
 
+/**
+ * TransformarTextoSimple
+ * 
+ * @author Ronald
+ *
+ */
 public class TransformarTextoSimple {
 	private static final boolean WORD_WITH_ERROR_SAME_WORD = true;
 	private boolean verboselog;
 
-	public static void main(String[] args) throws Exception {
-		TransformarTextoSimple to = new TransformarTextoSimple();
-		TransformaOracionResponse x = 	to.transformarTextoSimple(1, "siendo $ 567,88"//
-				+ " la $33.44 1 de 9 de 2023, suma USD $ 199.456,96. Registro de"//
-				+ " $ 171.456,96. una en vir	tud  celular 0960590924", true);
-		System.out.println( x.getTextoResultado() ); 
-	}
-
-	
 	/**
 	 * 
-	 * @param z
 	 * @param strTextoSimple
-	 * @param commons
 	 * @return
 	 * @throws Exception
 	 */
 	public TransformaOracionResponse transformarTextoSimple(//
-			int z, // Para saber si es el primer RUNS
 			String strTextoSimple, //
-			boolean verboselog) throws Exception {
+			Properties props//
+	) throws Exception {
 
-		this.verboselog = verboselog;
+		// false es el valor por defecto en caso de error!
+		this.verboselog = PropsUtil.getBoolean(props, PropertiesEnum.VERBOSE, false);
+		//
 		TransformaOracionResponse processResponse = new TransformaOracionResponse();
-		//create array, split and clean empties!.
+
+		// create array, split and clean empties!.
 		processResponse.setArrPalabras(split_cleanBlancosTabsDeTexto(strTextoSimple));
 
 		// Analisis de cada Palabra!
 		procesarAnalisisPorCadaPalabra(processResponse);
 
+		// RECORRO PALABRAS y ajusto los errores.
 		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
 			Palabra val = entry.getValue();
 			if (val.hasErrors() && WORD_WITH_ERROR_SAME_WORD) {
+				// el arror obliga a devolver la palabra original
 				val.fixResultsWithOriginalWordForTransform();
 			}
 		}
 
+		// completar Palabras anterior y Posterior.
+		completarPalabraConOtras(processResponse.getMapAnalisis(), processResponse.getArrPalabras(), props);
+		
 		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
-			Palabra val = entry.getValue();
-			//
-			if (val.isEstrategiaNumericaFlag()) {
-				ejecutarEstrategiaNumeros(val);
+			
+			Palabra palabra = entry.getValue();
+			
+			//CUANDO esta en MODO -NO_ESTRATEGY-
+			if( palabra.getEstadoTransformacion()!= EstadoPalabraEnum.TRANSFORMACION_FIN &&
+					palabra.isNoStrategy()
+					) {
+				TransformarSimboloNumeroUnidos ts = new TransformarSimboloNumeroUnidos();
+				if(ts.validarNaturaleza(palabra)) {
+					try {
+						TransformaLetraResponse response = ts.transformar(palabra);
+						palabra.recibirTransformacionEspecifica(response.getSalida(), response.getMsjErrors());
+					} catch (Exception e) {
+						e.printStackTrace();
+						palabra.recibirTransformacionEspecifica(palabra.getPalabraInput(), e.getMessage());
+					}
+				}
 				continue;
-			} else if (val.sinEstrategia()) {
+			}
+			
+			//CUANDO esta en MODO 
+			//-SOLO_NUMERO_ENTERO-   
+			//-SOLO_NUMERO_CON_DECIMALES-
+			
+		}
+
+		// EJECUTO ESTRATEGIAS
+		for (Map.Entry<Integer, Palabra> entry : processResponse.getMapAnalisis().entrySet()) {
+			Palabra palabra = entry.getValue();
+			
+			if( palabra.getEstadoTransformacion()== EstadoPalabraEnum.TRANSFORMACION_FIN) {
+				System.out.println("skip palabra: ya lista "+palabra.lightLog());
+				continue;
+			}
+			//
+			if (palabra.isEstrategiaNumericaFlag()) {
+				ejecutarEstrategiaNumeros(palabra);
+				continue;
+			} else if (palabra.hasNoEstrategySelected()) {
 				// AQUI PONER CUSTOM_ESTRATEGISA
 				// PREDIO!!
 				TransformarPredio transf = new TransformarPredio();
-				if (transf.validarNaturaleza(val)) {
-					TransformaLetraResponse t = transf.transformar(val.palabraParaTransformar());
-					val.recibirTransformacionEspecifica(t.getSalida(), t.getMsjErrors());
+				if (transf.validarNaturaleza(palabra)) {
+					TransformaLetraResponse t = transf.transformar(palabra);
+					palabra.recibirTransformacionEspecifica(t.getSalida(), t.getMsjErrors());
 					continue;
 				}
 				// default
-				val.guardarResultadoTransformacion(val.palabraParaTransformar(), null);
+				palabra.guardarResultadoTransformacion(palabra.palabraParaTransformar(), null);
 				continue;
 			} else {
-				ejecutarEstrategiaPalabrasSimbolos_noNumeros(val);
+				ejecutarEstrategiaPalabrasSimbolos_noNumeros(palabra);
 				continue;
 			}
 
@@ -95,6 +137,46 @@ public class TransformarTextoSimple {
 	}
 
 	/**
+	 * completar Palabra Con Otras palabras anterior y posterior<br>
+	 * Recorre el mapa de palabras
+	 * 
+	 * @param mapAnalisis
+	 * @param arrPalabras
+	 * @param props
+	 * @throws PropertiesException
+	 */
+	private void completarPalabraConOtras(//
+			Map<Integer, Palabra> mapAnalisis, List<String> arrPalabras, Properties props) throws PropertiesException {
+		int boundary = mapAnalisis.size() - 1;
+
+		for (Map.Entry<Integer, Palabra> entry : mapAnalisis.entrySet()) {
+			Palabra palabra = entry.getValue();
+			if (palabra.getOrden() == 0) {
+				String prevWord = PropsUtil.getString(props, PropertiesEnum.PREVIUS_EXTRA_WORD);
+				if (prevWord != null) {
+					palabra.setTxtPreviousWord(prevWord);
+				}
+				palabra.setTxtNextWord(mapAnalisis.get(palabra.getOrden() + 1).getPalabraInput());
+				System.out.println(palabra.getTxtPreviousWord() + "  " + palabra.getPalabraInput() + "  "
+						+ palabra.getTxtNextWord());
+				continue;
+			}
+			if (palabra.getOrden() == boundary) {
+				palabra.setTxtPreviousWord(mapAnalisis.get(palabra.getOrden() - 1).getPalabraInput());
+				palabra.setTxtNextWord(null);
+				System.out.println(palabra.getTxtPreviousWord() + "  " + palabra.getPalabraInput() + "  "
+						+ palabra.getTxtNextWord());
+				continue;
+			}
+			palabra.setTxtPreviousWord(mapAnalisis.get(palabra.getOrden() - 1).getPalabraInput());
+			palabra.setTxtNextWord(mapAnalisis.get(palabra.getOrden() + 1).getPalabraInput());
+			System.out.println(
+					palabra.getTxtPreviousWord() + "  " + palabra.getPalabraInput() + "  " + palabra.getTxtNextWord());
+		}
+
+	}
+
+	/**
 	 * <b>TITKE</b><br />
 	 * 
 	 * @throws Exception
@@ -102,10 +184,10 @@ public class TransformarTextoSimple {
 	private void ejecutarEstrategiaPalabrasSimbolos_noNumeros(//
 			Palabra anal //
 	) throws Exception {
-		if (anal.getEstrategia().equals(EstrategiaEnum.PALABRA) || //
-				anal.getEstrategia().equals(EstrategiaEnum.OTRAS_PALABRAS) || //
-				anal.getEstrategia().equals(EstrategiaEnum.SIMBOLOS_NO_DINERO) || //
-				anal.getEstrategia().equals(EstrategiaEnum.ERROR_FIX_SAME_WORD)//
+		if (anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.PALABRA) || //
+				anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.OTRAS_PALABRAS) || //
+				anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.SIMBOLOS_NO_DINERO) || //
+				anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.ERROR_FIX_SAME_WORD)//
 		) {
 			anal.guardarResultadoTransformacion(anal.palabraParaTransformar(), null);
 			return;
@@ -127,32 +209,34 @@ public class TransformarTextoSimple {
 		NumberLetter_esUtil numberLetteresUtil = new NumberLetter_esUtil();
 		TransformarCedulaRuc transf = new TransformarCedulaRuc();
 		if (transf.validarNaturaleza(anal)) {
-			TransformaLetraResponse t = transf.transformar(anal.palabraParaTransformar());
+			TransformaLetraResponse t = transf.transformar(anal);
 			anal.recibirTransformacionEspecifica(t.getSalida(), t.getMsjErrors());
 		}
 
-		if (anal.getEstrategia().equals(EstrategiaEnum.SOLO_NUMERO_ENTERO)) {
+		if (anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.SOLO_NUMERO_ENTERO)) {
 			String toLetras = numberLetteresUtil.convertir(//
 					TipoEntradaEnum.numero, anal.palabraParaTransformar(), true);
 			anal.guardarResultadoTransformacion(toLetras, null);
 			return;
 		}
 
-		if (anal.getEstrategia().equals(EstrategiaEnum.SOLO_NUMERO_CON_DECIMALES)) {
+		if (anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.SOLO_NUMERO_CON_DECIMALES)) {
 			// TODO TRUCO PENDIENTE DE AJUSTAR
-			String ajusteTrucoChaoSeparadorDecimal = anal.palabraParaTransformar()
-					.replace(CharsStats.MILES_SEPARADOR, "");
+			String palabraTrucoChaoSeparadorDecimal = anal.palabraParaTransformar().replace(PalabraStats.MILES_SEPARADOR,
+					"");
+			
+			palabraTrucoChaoSeparadorDecimal = retiraSignoDolarPrimerCaracter(palabraTrucoChaoSeparadorDecimal);
 			String toLetras = numberLetteresUtil.convertir(//
 					TipoEntradaEnum.numero, //
-					ajusteTrucoChaoSeparadorDecimal, //
+					palabraTrucoChaoSeparadorDecimal, //
 					true);
 			anal.guardarResultadoTransformacion(toLetras, null);
 			return;
 		}
 
-		if (anal.getEstrategia().equals(EstrategiaEnum.DINERO)) {
-			String ajusteTrucoChaoSeparadorDecimal = anal.palabraParaTransformar()
-					.replace(CharsStats.MILES_SEPARADOR, "");
+		if (anal.getEstrategia().getTipoEnum().equals(TipoEstrategiaEnum.DINERO)) {
+			String ajusteTrucoChaoSeparadorDecimal = anal.palabraParaTransformar().replace(PalabraStats.MILES_SEPARADOR,
+					"");
 			boolean separadorComa = true;
 			String toLetras = numberLetteresUtil.convertir(//
 					TipoEntradaEnum.dinero, ajusteTrucoChaoSeparadorDecimal, separadorComa);
@@ -163,9 +247,19 @@ public class TransformarTextoSimple {
 
 	}
 
+	private String retiraSignoDolarPrimerCaracter(String strPalabra) {
+		if( strPalabra.charAt(0) == '$' ){
+			return strPalabra.substring(1);
+		}
+		return strPalabra;
+	}
+	
 	/**
 	 * Procesar cada Palabra<br>
-	 * AnalisisPalabraDTO su constructor hace analisis.
+	 * AnalisisPalabraDTO su constructor hace analisis.<br>
+	 * Estadistica Caracter a caracter<br>
+	 * escoger la mejor estrategia<br>
+	 * TODO PENDIENTE mover el calculo de la estrategia
 	 * 
 	 * @param to
 	 * @param commons
@@ -178,6 +272,11 @@ public class TransformarTextoSimple {
 		}
 	}
 
+	/**
+	 * 
+	 * @param text0Run
+	 * @return
+	 */
 	private List<String> split_cleanBlancosTabsDeTexto(String text0Run) {
 		text0Run = limpiarTabulaciones(text0Run);
 		String[] arrPalabrasOriginales = text0Run.split(" ");
@@ -185,30 +284,40 @@ public class TransformarTextoSimple {
 		return arrPalabras;
 	}
 
+	/**
+	 * reemplaza las tabulaciones de un texto.
+	 * 
+	 * @param text0Run
+	 * @return
+	 */
 	private String limpiarTabulaciones(String text0Run) {
 		return text0Run.replace("\t", " ");
 	}
 
+	/**
+	 * Limpiar los espacios en blanco
+	 * 
+	 * @param arrOrigin
+	 * @return
+	 */
 	private List<String> limpiandoEspaciosEnBlanco(String[] arrOrigin) {
 		List<String> list = new ArrayList<>();
 		for (int j = 0; j < arrOrigin.length; j++) {
-			if (verboselog)
-				System.out.print("      --- arr[" + j + "]:  " + arrOrigin[j]);
-			if (check_notNullNotEmpty(arrOrigin[j])) {
+			if (checkNotNullNotEmpty(arrOrigin[j])) {
 				list.add(arrOrigin[j]);
-				if (verboselog)
-					System.out.println("  OK  ");
 			}
 		}
 		return list;
 	}
 
 	/**
+	 * retorna TRUE si el objeto existe y no es nulo ni vacio.<br>
+	 * hace trim()
 	 * 
 	 * @param reference
 	 * @return
 	 */
-	private boolean check_notNullNotEmpty(String reference) {
+	private boolean checkNotNullNotEmpty(String reference) {
 		if (reference == null) {
 			return false;
 		}

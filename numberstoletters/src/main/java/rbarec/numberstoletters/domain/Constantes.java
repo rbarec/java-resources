@@ -6,7 +6,7 @@ package rbarec.numberstoletters.domain;
  * @author Ronald
  *
  */
-public class Constantes {
+class Constantes {
 
 	/**
 	 * DEBEN_SIGNOS_PUNTUACION_RETIRADOS
@@ -16,7 +16,10 @@ public class Constantes {
 	/**
 	 * Signos de Puntuacion gramaticas pegada al final de una palabra!
 	 */
-	static final String GRAMATICAL_SIGN = "?,.:;";
-
+	public static final String GRAMATICAL_SIGN = "?,.:;";
+	/**
+	 * DECIMALES_SEPARADOR
+	 */
+	public static final String DECIMALES_SEPARADOR = ",";
 
 }

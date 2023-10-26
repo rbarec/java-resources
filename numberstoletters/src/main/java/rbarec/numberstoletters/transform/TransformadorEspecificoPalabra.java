@@ -26,5 +26,5 @@ public interface TransformadorEspecificoPalabra {
 	 * @param entrada
 	 * @return
 	 */
-	public TransformaLetraResponse transformar(String entrada);
+	public TransformaLetraResponse transformar(	Palabra palabraObj);
 }

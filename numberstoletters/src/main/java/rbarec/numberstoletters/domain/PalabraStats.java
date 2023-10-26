@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import rbarec.numberstoletters.exceptions.MoneyParseStringException;
 import rbarec.numberstoletters.util.MoneyConverterLocale;
+import rbarec.numberstoletters.util.MoneyRegularExpresionUtil;
 
 /**
  * 
@@ -17,7 +18,7 @@ import rbarec.numberstoletters.util.MoneyConverterLocale;
 @Log4j2
 @Getter
 @Setter
-public class CharsStats {
+public class PalabraStats {
 	/**
 	 * 
 	 */
@@ -39,64 +40,61 @@ public class CharsStats {
 	 * simbolosSignosDinero
 	 */
 	private static final String simbolosSignosDinero = "+-";
-	/**
-	 * DECIMALES_SEPARADOR
-	 */
-	public static final String DECIMALES_SEPARADOR = ",";
+
 	/**
 	 * MILES_SEPARADOR
 	 */
 	public static final String MILES_SEPARADOR = ".";
 
 	/**
-	 * 
+	 * cuantos caracteres del alfabeto
 	 */
 	private int cuantosLetrasAZaz = 0;
 	/**
-	 * 
+	 * cuantos caracteres son numeros
 	 */
 	private int cuantosNumeros = 0;
 	/**
-	 * 
+	 * cuantos caracteres son simbolos
 	 */
 	private int cuantosSimbolos = 0;
 	/**
-	 * 
+	 * cuantos caracteres son simbolos que no representan dinero o decimales
 	 */
 	private int cuantosSimbolosNoDinero = 0;
 	/**
-	 * 
+	 * cuantos caracteres son simbolos de dinero o decimales
 	 */
 	private int cuantosSimbolosDinero = 0;
 	/**
-	 * 
+	 * Cuantos caracteres de signo dinero $ existen
 	 */
 	private int cuantosSimbolosSignoDinero = 0;
 	/**
-	 * 
+	 * cuantos caracteres son el separador decimal existen
 	 */
 	private int cuantosSimboloSeparadorDecimal = 0;
 	/**
-	 * 
+	 * suantos caracteres separadores de miles existen.
 	 */
 	private int cuantosSimboloSeparadorMiles = 0;
 
 	/**
-	 * 
+	 * Campo que dice si se logro con exito parsear a numero.
 	 */
-	private boolean parsearAnumero = false;
+	private boolean parserToNumberSuccessful = false;
 
 	/**
 	 * constructor
 	 * 
-	 * @param palabra
+	 * @param strPalabra
 	 */
-	CharsStats(String palabra) {
+	PalabraStats(String strPalabra) {
 		super();
 
-		char[] ch = new char[palabra.length()];
-		for (int i = 0; i < palabra.length(); i++) {
-			ch[i] = palabra.charAt(i);
+		char[] ch = new char[strPalabra.length()];
+		for (int i = 0; i < strPalabra.length(); i++) {
+			ch[i] = strPalabra.charAt(i);
 			if (Character.isDigit(ch[i])) {
 				cuantosNumeros++;
 			} else if (Character.isLetter(ch[i])) {
@@ -112,7 +110,7 @@ public class CharsStats {
 				if (simbolosSignosDinero.contains("" + ch[i])) {
 					cuantosSimbolosSignoDinero++;
 				}
-				if (DECIMALES_SEPARADOR.equalsIgnoreCase("" + ch[i])) {
+				if (Constantes.DECIMALES_SEPARADOR.equalsIgnoreCase("" + ch[i])) {
 					cuantosSimboloSeparadorDecimal++;
 				}
 				if (MILES_SEPARADOR.equalsIgnoreCase("" + ch[i])) {
@@ -120,23 +118,21 @@ public class CharsStats {
 				}
 			}
 		} // fin for
-
 		if (!tieneSimbolosNoDinero() && //
 				!tieneLetrasAZaz() && //
 				tieneNumeros()) {
 			try {
-				MoneyConverterLocale.parse(palabra, Locale.US);
-				parsearAnumero = true;
-
+				MoneyConverterLocale.parse(strPalabra, Locale.US);
+				parserToNumberSuccessful = true ;
 			} catch (MoneyParseStringException e) {
 				log.error("Money parse error.", e);
 			}
-			if (!parsearAnumero && isMoneyRegex(palabra)) {
-				parsearAnumero = true;
+			if (!parserToNumberSuccessful && MoneyRegularExpresionUtil.isMoneyRegex(strPalabra)) {
+				parserToNumberSuccessful = true;
 			}
 		}
 		// ver si es un $ o USD y que el proximo token es CONVERTIBLE dinero!
-		this.palabra = palabra;
+		this.palabra = strPalabra;
 	}
 
 	/**
@@ -212,23 +208,6 @@ public class CharsStats {
 		return tieneNumeros() && !tieneLetrasAZaz() && !tieneSimbolos();
 	}
 
-	/**
-	 * ("Matches:(20) "+MoneyUtil.isMoney("20")); // Should be true <br/>
-	 * ("Matches:(20,00) "+MoneyUtil.isMoney("20,00")); // Should be true<br/>
-	 * ("Matches:(30.01) "+MoneyUtil.isMoney("30.01")); // Should be true<br/>
-	 * ("Matches:(30,000.01) "+MoneyUtil.isMoney("30,000.01")); // Should be
-	 * true<br/>
-	 * ("Matches:(-2980) "+MoneyUtil.isMoney("-2980")); // Should be true<br/>
-	 * ("Matches:($20) "+MoneyUtil.isMoney("$20")); // Should be true<br/>
-	 * ("Matches:(jdl) "+MoneyUtil.isMoney("jdl")); // Should be false<br/>
-	 * ("Matches:(2lk0) "+MoneyUtil.isMoney("2lk0"));
-	 */
-	public boolean isMoneyRegex(String stringVal) {
-		if (stringVal.matches("^[\\$]?[-+]?[\\d\\.,]*[\\.,]?\\d+$")) {
-			return true;
-		}
 
-		return false;
-	}
 
 }
