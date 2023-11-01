@@ -19,5 +19,6 @@ public class CreateKnowledgeFileRequest implements Serializable {
 
 	private static final long serialVersionUID = 1712213180L;
 
+	
 	private String fileUrl;
 }

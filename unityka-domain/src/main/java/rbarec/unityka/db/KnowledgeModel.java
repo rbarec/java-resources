@@ -13,7 +13,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import rbarec.unityka.domain.LineKnow;
 
 /**
  * 
@@ -51,8 +50,14 @@ public class KnowledgeModel implements Serializable {
 	/**
 	 * Lineas de conocimientos
 	 */
+	@Field(value = "lines")
 	private List<LineKnowModel> lines;
 
+	/**
+	 * 
+	 * @author Ronald
+	 *
+	 */
 	@Data
 	@Builder
 	@Getter
@@ -60,7 +65,7 @@ public class KnowledgeModel implements Serializable {
 	@AllArgsConstructor
 	public static class LineKnowModel implements Serializable {
 		private static final long serialVersionUID = 17121222180L;
-
+		@Field(value = "raw_original")
 		private String rawOriginal;
 	}
 
