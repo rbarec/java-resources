@@ -19,4 +19,3 @@ el nombre viene de  https://philpapers.org/archive/LEDWIT.pdf
 
 
 
-
